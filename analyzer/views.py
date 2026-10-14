@@ -11,8 +11,11 @@ from .models import RoundRecord
 @ensure_csrf_cookie
 def home(request): return render(request, "index.html")
 def payload(request):
-    try: return json.loads(request.body or b"{}")
-    except (json.JSONDecodeError, UnicodeDecodeError): return None
+    try:
+        data = json.loads(request.body or b"{}")
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
 @require_GET
 def me(request): return JsonResponse({"authenticated":request.user.is_authenticated,"username":request.user.username if request.user.is_authenticated else ""})
 @require_POST
@@ -41,8 +44,8 @@ def rounds(request):
     data=payload(request)
     if data is None: return JsonResponse({"error":"البيانات غير صالحة."},status=400)
     predictions=data.get("predictions",[]); actuals=data.get("actuals",[0]*50)
-    if not isinstance(predictions,list) or len(predictions)!=50 or not all(x in (0,1,2) for x in predictions): return JsonResponse({"error":"التوقعات يجب أن تحتوي على 50 خانة صحيحة."},status=400)
-    if not isinstance(actuals,list) or len(actuals)!=50 or not all(x in (0,1,2) for x in actuals): return JsonResponse({"error":"النتائج الفعلية يجب أن تحتوي على 50 خانة صحيحة."},status=400)
+    if not isinstance(predictions,list) or len(predictions)!=50 or not all(type(x) is int and x in (0,1,2) for x in predictions): return JsonResponse({"error":"التوقعات يجب أن تحتوي على 50 خانة صحيحة."},status=400)
+    if not isinstance(actuals,list) or len(actuals)!=50 or not all(type(x) is int and x in (0,1,2) for x in actuals): return JsonResponse({"error":"النتائج الفعلية يجب أن تحتوي على 50 خانة صحيحة."},status=400)
     try: row_number=max(1,min(10,int(data.get("row_number",1))))
     except (ValueError,TypeError): row_number=1
     record=RoundRecord.objects.create(user=request.user,session_name=str(data.get("session_name",""))[:120],row_number=row_number,multiplier=str(data.get("multiplier",""))[:32],predictions=predictions,actuals=actuals,notes=str(data.get("notes",""))[:500])
