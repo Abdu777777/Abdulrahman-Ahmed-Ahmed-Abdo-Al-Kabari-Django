@@ -1,0 +1,4 @@
+from django.contrib import admin
+from django.urls import path
+from analyzer import views
+urlpatterns = [path("admin/", admin.site.urls), path("", views.home, name="home"), path("api/me/", views.me, name="me"), path("api/register/", views.register, name="register"), path("api/login/", views.login_view, name="login"), path("api/logout/", views.logout_view, name="logout"), path("api/rounds/", views.rounds, name="rounds"), path("api/rounds/<int:round_id>/", views.round_detail, name="round-detail"), path("healthz/", views.healthz, name="healthz")]
