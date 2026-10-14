@@ -1,6 +1,8 @@
 import json
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.db import connection
 from django.http import JsonResponse
@@ -26,6 +28,11 @@ def register(request):
     if len(username)<3 or len(username)>80: return JsonResponse({"error":"اسم المستخدم يجب أن يكون 3 أحرف على الأقل."},status=400)
     if len(password)<8: return JsonResponse({"error":"كلمة المرور يجب ألا تقل عن 8 أحرف."},status=400)
     if User.objects.filter(username__iexact=username).exists(): return JsonResponse({"error":"اسم المستخدم مستخدم بالفعل."},status=409)
+    candidate = User(username=username)
+    try:
+        validate_password(password, user=candidate)
+    except ValidationError as exc:
+        return JsonResponse({"error":" ".join(exc.messages)},status=400)
     user=User.objects.create_user(username=username,password=password); login(request,user)
     return JsonResponse({"ok":True,"username":user.username},status=201)
 @require_POST
